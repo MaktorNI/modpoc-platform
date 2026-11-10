@@ -1,6 +1,6 @@
 {
   "name": "@maktorni/module-form",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "POC: reusable contact form module (plain ES module, no build)",
   "type": "module",
   "exports": {
