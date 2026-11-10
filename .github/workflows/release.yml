@@ -1,0 +1,84 @@
+name: release
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: packages/module-form
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/module-form/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: VERSION in index.js must equal package.json version
+        run: npm run check-version
+
+  publish:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # push the git tag
+      packages: write   # npm publish to GitHub Packages
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: '@maktorni'
+
+      - name: Read package name and version
+        id: pkg
+        run: |
+          echo "name=$(node -p "require('./package.json').name")" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Is this version already published?
+        id: exists
+        env:
+          NAME: ${{ steps.pkg.outputs.name }}
+          VERSION: ${{ steps.pkg.outputs.version }}
+        run: |
+          # E404 = package/version not in the registry yet; any other failure (auth, network) must stop the job.
+          if out=$(npm view "$NAME@$VERSION" version 2>&1); then
+            if [ "$out" = "$VERSION" ]; then exists=true; else exists=false; fi
+          elif echo "$out" | grep -q E404; then
+            exists=false
+          else
+            echo "$out"; exit 1
+          fi
+          echo "exists=$exists" >> "$GITHUB_OUTPUT"
+          echo "$NAME@$VERSION already published: $exists"
+
+      - name: Publish
+        if: steps.exists.outputs.exists == 'false'
+        run: npm publish
+
+      - name: Tag module-form@<version>
+        if: steps.exists.outputs.exists == 'false'
+        env:
+          TAG: module-form@${{ steps.pkg.outputs.version }}
+        run: |
+          git tag "$TAG"
+          git push origin "$TAG"
+
+      - name: Skip (version already in GitHub Packages)
+        if: steps.exists.outputs.exists == 'true'
+        run: echo "Nothing to publish."
