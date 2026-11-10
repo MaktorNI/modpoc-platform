@@ -36,6 +36,12 @@ describe('mountForm', () => {
     assert.equal(ctx.root.querySelector('.mf__success').hidden, true)
   })
 
+  it('should reject an email without a domain dot (a@b)', () => {
+    submit(ctx, { name: 'Иван', email: 'a@b' })
+    assert.equal(ctx.root.querySelector('.mf__error').hidden, false)
+    assert.equal(ctx.root.querySelector('.mf__success').hidden, true)
+  })
+
   it('should thank the user and call onSubmit for a valid email', () => {
     const calls = []
     const local = setup({ onSubmit: (data) => calls.push(data) })

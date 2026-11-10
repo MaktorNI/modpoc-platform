@@ -1,4 +1,7 @@
-export const VERSION = '1.0.0'
+export const VERSION = '1.0.1'
+
+// local@domain.tld — no spaces, exactly one "@", at least one dot in the domain.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const HTML_ESCAPES = {
   '&': '&amp;',
@@ -13,7 +16,7 @@ export function escapeHtml(value) {
 }
 
 export function isValidEmail(email) {
-  return email.includes('@')
+  return EMAIL_PATTERN.test(email)
 }
 
 function renderForm({ title, buttonText }) {
