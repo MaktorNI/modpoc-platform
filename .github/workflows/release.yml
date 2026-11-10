@@ -8,20 +8,24 @@ on:
 permissions:
   contents: read
 
-defaults:
-  run:
-    working-directory: packages/module-form
-
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # One leg per package. A new module = new folder in packages/ + one line here.
+      matrix:
+        package: [module-form, module-banner]
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.package }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: packages/module-form/package-lock.json
+          cache-dependency-path: packages/${{ matrix.package }}/package-lock.json
       - run: npm ci
       - run: npm test
       - name: VERSION in index.js must equal package.json version
@@ -31,6 +35,13 @@ jobs:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false   # a failure in one package must not block publishing the other
+      matrix:
+        package: [module-form, module-banner]
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.package }}
     permissions:
       contents: write   # push the git tag
       packages: write   # npm publish to GitHub Packages
@@ -71,10 +82,10 @@ jobs:
         if: steps.exists.outputs.exists == 'false'
         run: npm publish
 
-      - name: Tag module-form@<version>
+      - name: Tag <package>@<version>
         if: steps.exists.outputs.exists == 'false'
         env:
-          TAG: module-form@${{ steps.pkg.outputs.version }}
+          TAG: ${{ matrix.package }}@${{ steps.pkg.outputs.version }}
         run: |
           git tag "$TAG"
           git push origin "$TAG"
