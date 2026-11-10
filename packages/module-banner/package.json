@@ -1,0 +1,30 @@
+{
+  "name": "@maktorni/module-banner",
+  "version": "1.0.0",
+  "description": "POC: dismissible message banner module (plain ES module, no build)",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "style.css",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "check-version": "node scripts/check-version.js"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MaktorNI/modpoc-platform.git",
+    "directory": "packages/module-banner"
+  },
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}
